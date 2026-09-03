@@ -107,7 +107,7 @@ for (const row of rows) {
   for (const [, ref] of row.matchAll(/`([^`]+\.md)`/g)) {
     const found = ref.startsWith(".ctx/")
       ? exists(ref)
-      : exists(join(CTX, ref)) || exists(ref);
+      : exists(join(CTX, ref)) || exists(ref) || exists(join(CTX, "adapters", ref));
     if (!found && !dead.includes(ref)) dead.push(ref);
   }
 }
