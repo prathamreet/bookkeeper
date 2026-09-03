@@ -1,16 +1,22 @@
-# bookkeeper
+<div align="center">
 
-**Context engineering for AI coding agents.** A tiered, self-maintaining context
-layer with provenance-tracked staleness detection, deterministic enforcement,
-and automatic session bookkeeping. Ships as a zip. Zero dependencies.
+# 📒 bookkeeper
 
-[![Release](https://img.shields.io/github/v/release/OWNER/bookkeeper?label=release)](https://github.com/OWNER/bookkeeper/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/OWNER/bookkeeper/total?label=downloads)](https://github.com/OWNER/bookkeeper/releases)
-[![License](https://img.shields.io/badge/license-MIT--0-blue)](LICENSE)
-![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
-![Works with](https://img.shields.io/badge/works%20with-Cursor%20%7C%20Claude%20Code%20%7C%20Codex%20%7C%20Copilot-lightgrey)
+**Context engineering for AI coding agents.**
 
-<!-- Replace OWNER above before publishing. -->
+A tiered, self-maintaining context layer with provenance-tracked staleness detection,<br/>
+deterministic enforcement, and automatic session bookkeeping.<br/>
+Ships as a zip. Zero dependencies.
+
+<br/>
+
+[![Release](https://img.shields.io/github/v/release/prathamreet/bookkeeper?style=for-the-badge&logo=github&label=release)](https://github.com/prathamreet/bookkeeper/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/prathamreet/bookkeeper/total?style=for-the-badge&logo=github&label=downloads)](https://github.com/prathamreet/bookkeeper/releases)
+[![License](https://img.shields.io/badge/license-MIT--0-blue?style=for-the-badge)](LICENSE)
+[![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen?style=for-the-badge)](#)
+[![Works with](https://img.shields.io/badge/works%20with-Cursor%20%7C%20Claude%20Code%20%7C%20Codex%20%7C%20Copilot-lightgrey?style=for-the-badge)](#)
+
+</div>
 
 ---
 
