@@ -10,6 +10,8 @@ or capabilities, **patch** for wording and fixes.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-03
+
 ### Added
 - `manual.md` — every phrase you can say to your agent (`catchup`, `park`,
   `reindex`, `refresh context`, `gotcha`), with two Mermaid maps and a table of
