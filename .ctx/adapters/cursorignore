@@ -1,0 +1,18 @@
+# Copy to .cursorignore (leading dot) in your repo root.
+#
+# Agents usually can't write this file themselves — it controls their own
+# access, so Cursor keeps it in human hands. That's also why it works: unlike a
+# written instruction in AGENTS.md, this is enforced by the tool rather than
+# requested of the model. Rules ask nicely; this blocks access.
+#
+# Limit worth knowing: Cursor's docs say terminal and MCP tools cannot block
+# access to ignored files, so `cat .ctx/scratchpad.md` still works. This raises
+# the cost of an accident. It is not a security boundary.
+
+.ctx/scratchpad.md
+
+# Add anything else that's human-only or sensitive, e.g.
+# .env
+# .env.*
+# secrets/
+# *.pem

@@ -1,0 +1,98 @@
+name: Release
+
+# Tag vX.Y.Z and push. Builds ctx.zip from .ctx/ and attaches it to the release.
+# Only .ctx/ ships — everything else in this repo is furniture.
+#
+# Run with workflow_dispatch first to check the artifact without publishing.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and upload as a workflow artifact, but publish nothing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  # Every gate CI runs, run again at tag time. Calling the workflow rather than
+  # copying its steps is the only way the two stay identical.
+  validate:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Adopters have no other way to learn what changed between versions.
+      - name: Changelog mentions this version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! grep -q "\[$version\]" CHANGELOG.md; then
+            echo "::error file=CHANGELOG.md::No section for [$version]. Move Unreleased into a real entry first."
+            exit 1
+          fi
+
+      - name: Build ctx.zip
+        run: |
+          zip -r ctx.zip .ctx
+          sha256sum ctx.zip > ctx.zip.sha256
+          echo "### Artifact" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          unzip -l ctx.zip | tail -1 >> "$GITHUB_STEP_SUMMARY"
+          cat ctx.zip.sha256 >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # Unzipping into a scratch directory should reproduce .ctx/ exactly.
+      # Catches a malformed archive before anyone downloads it.
+      - name: Archive unpacks correctly
+        run: |
+          mkdir -p /tmp/verify && unzip -q ctx.zip -d /tmp/verify
+          test -f /tmp/verify/.ctx/starter.md
+          test -f /tmp/verify/.ctx/adapters/AGENTS.md
+          diff -r .ctx /tmp/verify/.ctx
+
+      - name: Upload for inspection
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctx-zip-preview
+          path: |
+            ctx.zip
+            ctx.zip.sha256
+
+      # `inputs` is empty on a tag push, so this publishes on a tag and stays
+      # quiet on a dispatch unless dry_run was explicitly turned off.
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v') && inputs.dry_run != true
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ctx.zip
+            ctx.zip.sha256
+          generate_release_notes: true
+          body: |
+            ## Install
+
+            1. Download `ctx.zip` below
+            2. Unzip it in your project root
+            3. Tell your agent: **`read .ctx/starter.md and follow it`**
+
+            Setup reads your repo, runs your commands, and hands you two forms
+            it has already filled in — the project, then the house rules. You
+            correct what's wrong. It then writes every context file in one pass,
+            installs the right root files for whichever AI tools you use, and
+            deletes itself.
+
+            Direct link, always latest:
+            `https://github.com/${{ github.repository }}/releases/latest/download/ctx.zip`
+
+            See [CHANGELOG.md](CHANGELOG.md) for what changed.

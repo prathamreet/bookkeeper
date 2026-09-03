@@ -1,0 +1,14 @@
+{
+  "_comment": "Copy to .claude/settings.json. Native deny rules — enforced by the tool, not requested of the model. Deny applies immediately, before folder trust. Remove this _comment key if your tooling rejects unknown fields.",
+  "permissions": {
+    "deny": [
+      "Read(./.ctx/scratchpad.md)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "PowerShell(git add *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git push *)"
+    ]
+  }
+}

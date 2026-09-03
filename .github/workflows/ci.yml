@@ -1,0 +1,115 @@
+name: CI
+
+# Checks the payload is shippable. Runs on every push and PR so a broken
+# release is caught long before someone tags one.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+  # Release calls this so a tag runs the same gates. A tag can be pushed
+  # without a PR, and duplicating the steps there is how the two drift apart.
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  payload:
+    name: Validate .ctx payload
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Every payload file needs a row in index.md. Without one it is invisible
+      # to the agents that will read it — the one silent failure in the design.
+      - name: Every file is indexed
+        run: node .ctx/hooks/sync-index.mjs --strict
+
+      # The scratchpad ships as an empty template. Personal notes left in it
+      # would go out to every user.
+      - name: Scratchpad is clean
+        run: |
+          if awk '/yours below/{f=1;next} f && NF {found=1} END{exit !found}' .ctx/scratchpad.md; then
+            echo "::error file=.ctx/scratchpad.md::Personal notes found below the marker. Clear them."
+            exit 1
+          fi
+
+      # Adapters are installed into a *user's* repo during setup. If one appears
+      # at this repo's root, someone has recreated the clutter we removed.
+      - name: No adapters leaked to the repo root
+        run: |
+          status=0
+          for f in CLAUDE.md .cursorignore .claude/settings.json .github/copilot-instructions.md; do
+            if [ -e "$f" ]; then
+              echo "::error file=$f::Belongs in .ctx/adapters/, not the repo root."
+              status=1
+            fi
+          done
+          exit $status
+
+      # An unresolved question shipping to users is worse than a visible <FILL:>,
+      # because it reads like a note to nobody.
+      #
+      # Only the used form counts — `[NEEDS CLARIFICATION: ...]` sitting in
+      # content. The payload has to be able to *describe* the marker, so any
+      # line that quotes it in backticks is documentation and is left alone.
+      - name: No unresolved questions in the payload
+        run: |
+          if grep -rn "\[NEEDS CLARIFICATION:" .ctx/ --include="*.md" \
+             | grep -v '`' | grep -v "_TEMPLATE.md" | grep -v "SKILL.md"; then
+            echo "::error::Resolve these or move them into a template's example comment."
+            exit 1
+          fi
+
+      # The payload must stay dependency-free apart from the two opt-in hooks.
+      - name: No stray executables in the payload
+        run: |
+          found=$(find .ctx -type f ! -name "*.md" ! -name "cursorignore" ! -name "*.json" ! -path ".ctx/hooks/*" || true)
+          if [ -n "$found" ]; then
+            echo "::error::Unexpected non-markdown files in the payload:"
+            echo "$found"
+            exit 1
+          fi
+
+      - name: Hook scripts parse
+        run: |
+          node --check .ctx/hooks/handoff-gate.mjs
+          node --check .ctx/hooks/sync-index.mjs
+
+      # Smoke test: the gate must stay silent and exit 0 on empty input.
+      # It fails open by design, and a hook that misbehaves degrades every turn.
+      - name: Handoff gate fails open
+        run: |
+          out=$(echo '{}' | node .ctx/hooks/handoff-gate.mjs)
+          if [ -n "$out" ]; then
+            echo "::error::Expected no output on empty input, got: $out"
+            exit 1
+          fi
+
+  links:
+    name: Check internal links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every referenced .ctx path exists
+        run: |
+          status=0
+          while IFS= read -r ref; do
+            # A path cut short by a glob — `.ctx/decisions/0001-*.md` stops at
+            # the `*` — isn't a broken link, it's an example. Say so and move
+            # on, rather than failing the build over prose.
+            case "$ref" in
+              *[!A-Za-z0-9] )
+                echo "::warning::Ignoring truncated reference: $ref"
+                continue ;;
+            esac
+            [ -e "$ref" ] || { echo "::error::Broken reference: $ref"; status=1; }
+          done < <(grep -rhoE '`\.ctx/[A-Za-z0-9_./-]+`' --include="*.md" . \
+                   | tr -d '`' | sed 's:/$::' | sort -u)
+          exit $status
