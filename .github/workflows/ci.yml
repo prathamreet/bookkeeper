@@ -7,6 +7,7 @@ on:
   push:
     branches: [main, master]
   pull_request:
+    branches: [main, master]
   workflow_dispatch:
   # Release calls this so a tag runs the same gates. A tag can be pushed
   # without a PR, and duplicating the steps there is how the two drift apart.
